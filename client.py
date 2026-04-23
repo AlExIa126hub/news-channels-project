@@ -6,10 +6,27 @@ import sys
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 5000
 
+SEPARATOR = "-" * 50
+
 
 def send_json(sock, data):
     message = json.dumps(data, ensure_ascii=False) + "\n"
     sock.sendall(message.encode("utf-8"))
+
+
+def print_separator():
+    print(f"\n{SEPARATOR}")
+
+
+def print_channels(channels):
+    if not channels:
+        print("No channels available.")
+        return
+
+    for i, ch in enumerate(channels, start=1):
+        print(
+            f"{i}. {ch['name']} | {ch['description']} | owner={ch['owner']} | subscribers={ch['subscriber_count']}"
+        )
 
 
 def receiver(sock):
@@ -18,54 +35,49 @@ def receiver(sock):
         while True:
             line = file.readline()
             if not line:
-                print("\n[INFO] Disconnected from server.")
+                print_separator()
+                print("[INFO] Disconnected from server.")
+                print(SEPARATOR)
                 break
 
             data = json.loads(line.strip())
             msg_type = data.get("type")
 
+            print_separator()
+
             if msg_type == "welcome":
-                print(f"\n[WELCOME] {data.get('message')}")
-                channels = data.get("channels", [])
-                if channels:
-                    print("[CHANNELS AVAILABLE]")
-                    for ch in channels:
-                        print(
-                            f"  - {ch['name']} | {ch['description']} | owner={ch['owner']} | subscribers={ch['subscriber_count']}"
-                        )
-                else:
-                    print("[CHANNELS AVAILABLE] No channels yet.")
+                print(f"[WELCOME] {data.get('message')}")
+                print("Channels available:")
+                print_channels(data.get("channels", []))
 
             elif msg_type == "list_response":
-                channels = data.get("channels", [])
-                print("\n[CHANNEL LIST]")
-                if not channels:
-                    print("  No channels available.")
-                else:
-                    for ch in channels:
-                        print(
-                            f"  - {ch['name']} | {ch['description']} | owner={ch['owner']} | subscribers={ch['subscriber_count']}"
-                        )
+                print("[CHANNEL LIST]")
+                print_channels(data.get("channels", []))
 
             elif msg_type == "notification":
-                print(f"\n[NOTIFICATION] {data.get('message')}")
+                print(f"[NOTIFICATION] {data.get('message')}")
 
             elif msg_type == "news":
-                print(
-                    f"\n[NEWS] Channel='{data.get('channel_name')}' From='{data.get('from')}' Content='{data.get('content')}'"
-                )
+                print("[NEWS]")
+                print(f"Channel : {data.get('channel_name')}")
+                print(f"From    : {data.get('from')}")
+                print(f"Content : {data.get('content')}")
 
             elif msg_type == "success":
-                print(f"\n[SUCCESS] {data.get('message')}")
+                print(f"[SUCCESS] {data.get('message')}")
 
             elif msg_type == "error":
-                print(f"\n[ERROR] {data.get('message')}")
+                print(f"[ERROR] {data.get('message')}")
 
             else:
-                print(f"\n[SERVER MESSAGE] {data}")
+                print(f"[SERVER MESSAGE] {data}")
+
+            print(SEPARATOR)
 
     except Exception as e:
-        print(f"\n[ERROR] Receiver thread stopped: {e}")
+        print_separator()
+        print(f"[ERROR] Receiver thread stopped: {e}")
+        print(SEPARATOR)
 
 
 def print_help():
@@ -94,6 +106,10 @@ def main():
         SERVER_HOST = sys.argv[1]
     if len(sys.argv) >= 3:
         SERVER_PORT = int(sys.argv[2])
+
+    print(SEPARATOR)
+    print("News Channel Client")
+    print(SEPARATOR)
 
     username = input("Enter username: ").strip()
     if not username:
